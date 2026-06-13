@@ -91,7 +91,11 @@ See `.env.example`:
 ## Current Phase
 
 **Phase 1: PaperLink Storage MVP**
-- Status: Scaffolded, core files written
-- Next: Install deps, typecheck, configure real D1/R2 via wrangler, test locally
+- Status: ✅ Deployed to Cloudflare — live at `https://usepaperlink.site`
+- Implemented: Auth helpers, R2 lib, slug generation, files API routes, public `/f/:slug` endpoint
+- D1 database `paperlink-storage` created, migrations applied
+- R2 bucket `paperlink-files` configured
+- Secrets: `BOT_SECRET` set on worker
+- Bot not started yet — needs `.env` with `BOT_TOKEN`, `API_BASE_URL`, `BOT_SECRET`
 
 See `PAPERLINK_PLAN.md` for full architecture and roadmap.
