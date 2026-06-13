@@ -5,8 +5,8 @@ from pathlib import Path
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from utils import get_main_menu, get_file_actions, format_file_size, format_timestamp
-from api_client import list_files, upload_file, delete_file
+from utils import get_main_menu, get_file_actions, format_file_size, format_timestamp, get_mail_menu
+from api_client import list_files, upload_file, delete_file, fetch_inbox, disconnect_mail
 
 MAX_FILE_SIZE = 10 * 1024 * 1024
 
@@ -184,6 +184,24 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown',
             reply_markup=get_main_menu()
         )
+    elif data == 'inbox':
+        await inbox_callback(query, user, context)
+    elif data == 'connect':
+        app_url = os.getenv('APP_URL', 'https://usepaperlink.site')
+        oauth_url = f"{app_url}/mail/connect/{user.id}"
+        await query.edit_message_text(
+            "📧 *Connect Gmail*\n\n"
+            f"[🔗 Click here to authorize]({oauth_url})\n\n"
+            "After authorizing, use /inbox to see your emails.",
+            parse_mode='Markdown',
+            disable_web_page_preview=True,
+            reply_markup=get_mail_menu()
+        )
+    elif data == 'back_main':
+        await query.edit_message_text(
+            "📦 PaperLink — choose an option:",
+            reply_markup=get_main_menu()
+        )
     elif data == 'myfiles':
         await list_files_callback(query, user)
     elif data == 'storage':
@@ -241,6 +259,32 @@ async def list_files_callback(query, user):
     except Exception as e:
         await query.edit_message_text(f"❌ Error: {str(e)}", reply_markup=get_main_menu())
 
+async def inbox_callback(query, user, context):
+    try:
+        result = await fetch_inbox(user.id, user.username, user.first_name)
+        if 'error' in result:
+            await query.edit_message_text(f"❌ {result['error']}", reply_markup=get_mail_menu())
+            return
+
+        emails = result.get('emails', [])
+        account = result.get('account', {})
+
+        if not emails:
+            await query.edit_message_text("📭 *Inbox is empty!*", parse_mode='Markdown', reply_markup=get_mail_menu())
+            return
+
+        text = f"📬 *Inbox* — {account.get('email_address', '')}\n\n"
+        for i, email in enumerate(emails[:10], 1):
+            sender = email.get('sender_name', email.get('sender_email', 'Unknown'))
+            subject = email.get('subject', '(No subject)')
+            snippet = email.get('snippet', '')[:60]
+            ts = format_timestamp(email.get('timestamp', 0))
+            text += f"{i}. *{subject}*\n   👤 {sender} • 🕐 {ts}\n   💬 {snippet}\n\n"
+
+        await query.edit_message_text(text, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_mail_menu())
+    except Exception as e:
+        await query.edit_message_text(f"❌ Error: {str(e)}", reply_markup=get_mail_menu())
+
 async def show_storage_callback(query, user):
     await query.edit_message_text(
         "📊 *Storage Status*\n\n"
@@ -250,3 +294,67 @@ async def show_storage_callback(query, user):
         parse_mode='Markdown',
         reply_markup=get_main_menu()
     )
+
+async def connect_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    app_url = os.getenv('APP_URL', 'https://usepaperlink.site')
+    oauth_url = f"{app_url}/mail/connect/{user.id}"
+    await update.message.reply_text(
+        "📧 *Connect Gmail*\n\n"
+        "Click the link below to authorize PaperLink to access your Gmail:\n\n"
+        f"[🔗 Connect Gmail]({oauth_url})\n\n"
+        "You'll be redirected to Google to grant access. "
+        "After that, use `/inbox` to see your emails.",
+        parse_mode='Markdown',
+        disable_web_page_preview=True,
+        reply_markup=get_mail_menu()
+    )
+
+async def inbox_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    await update.message.reply_text("📬 Loading inbox...")
+
+    try:
+        result = await fetch_inbox(user.id, user.username, user.first_name)
+        if 'error' in result:
+            await update.message.reply_text(f"❌ {result['error']}", reply_markup=get_mail_menu())
+            return
+
+        emails = result.get('emails', [])
+        account = result.get('account', {})
+
+        if not emails:
+            await update.message.reply_text(
+                "📭 *Inbox is empty!*",
+                parse_mode='Markdown',
+                reply_markup=get_mail_menu()
+            )
+            return
+
+        text = f"📬 *Inbox* — {account.get('email_address', '')}\n\n"
+        for i, email in enumerate(emails[:10], 1):
+            sender = email.get('sender_name', email.get('sender_email', 'Unknown'))
+            subject = email.get('subject', '(No subject)')
+            snippet = email.get('snippet', '')[:80]
+            ts = format_timestamp(email.get('timestamp', 0))
+            text += f"{i}. *{subject}*\n   👤 {sender}\n   💬 {snippet}\n   🕐 {ts}\n\n"
+
+        await update.message.reply_text(
+            text,
+            parse_mode='Markdown',
+            disable_web_page_preview=True,
+            reply_markup=get_mail_menu()
+        )
+    except Exception as e:
+        await update.message.reply_text(f"❌ Failed to load inbox: {str(e)}", reply_markup=get_mail_menu())
+
+async def disconnect_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    try:
+        result = await disconnect_mail(user.id, user.username, user.first_name)
+        if 'error' in result:
+            await update.message.reply_text(f"❌ {result['error']}")
+        else:
+            await update.message.reply_text("✅ Disconnected from Gmail.", reply_markup=get_main_menu())
+    except Exception as e:
+        await update.message.reply_text(f"❌ Failed: {str(e)}")

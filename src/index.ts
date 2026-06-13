@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import health from './routes/health';
 import files from './routes/files';
+import mail from './routes/mail';
 import { fileKey } from './lib/r2';
 import type { Env } from './types';
 
@@ -13,6 +14,7 @@ app.use('*', async (c, next) => {
 
 app.route('/', health);
 app.route('/files', files);
+app.route('/mail', mail);
 
 app.get('/f/:slug', async c => {
   const slug = c.req.param('slug');

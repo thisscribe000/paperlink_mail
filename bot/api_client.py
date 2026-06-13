@@ -64,6 +64,26 @@ async def list_files(user_id: int, username: str, first_name: str, limit: int = 
         async with session.get(url, headers=headers) as resp:
             return await resp.json()
 
+async def fetch_inbox(user_id: int, username: str, first_name: str, limit: int = 10):
+    url = f"{API_BASE}/mail/inbox?limit={limit}"
+    headers = {}
+    headers['X-Telegram-Init-Data'] = build_init_data(user_id, username, first_name)
+
+    timeout = aiohttp.ClientTimeout(total=30)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.get(url, headers=headers) as resp:
+            return await resp.json()
+
+async def disconnect_mail(user_id: int, username: str, first_name: str):
+    url = f"{API_BASE}/mail/disconnect"
+    headers = {}
+    headers['X-Telegram-Init-Data'] = build_init_data(user_id, username, first_name)
+
+    timeout = aiohttp.ClientTimeout(total=30)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.delete(url, headers=headers) as resp:
+            return await resp.json()
+
 async def delete_file(slug: str, user_id: int, username: str, first_name: str):
     url = f"{API_BASE}/files/{slug}"
     headers = {}

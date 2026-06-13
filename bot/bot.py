@@ -15,6 +15,7 @@ from telegram.ext import (
 from handlers import (
     start, help_command, handle_document, handle_photo,
     list_files_command, delete_file_command, button_handler,
+    connect_command, inbox_command, disconnect_command,
 )
 
 load_dotenv()
@@ -37,6 +38,9 @@ def main():
     app.add_handler(CommandHandler('help', help_command))
     app.add_handler(CommandHandler('files', list_files_command))
     app.add_handler(CommandHandler('delete', delete_file_command))
+    app.add_handler(CommandHandler('connect', connect_command))
+    app.add_handler(CommandHandler('inbox', inbox_command))
+    app.add_handler(CommandHandler('disconnect', disconnect_command))
     app.add_handler(CallbackQueryHandler(button_handler))
 
     doc_handler = MessageHandler(

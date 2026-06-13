@@ -9,6 +9,14 @@ load_dotenv()
 
 BOT_SECRET = os.getenv('BOT_SECRET', '')
 
+def get_mail_menu():
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📬 Inbox", callback_data="inbox")],
+        [InlineKeyboardButton("🔗 Connect Gmail", callback_data="connect")],
+        [InlineKeyboardButton("🔙 Back", callback_data="back_main")],
+    ])
+
 def get_main_menu():
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     return InlineKeyboardMarkup([
