@@ -15,7 +15,7 @@ from telegram.ext import (
 from handlers import (
     start, help_command, handle_document, handle_photo,
     list_files_command, delete_file_command, button_handler,
-    connect_command, inbox_command, disconnect_command, catch_all,
+    connect_command, inbox_command, disconnect_command,
 )
 
 load_dotenv()
@@ -55,13 +55,7 @@ def main():
     )
     app.add_handler(photo_handler)
 
-    catch_all_handler = MessageHandler(
-        filters.TEXT & ~filters.COMMAND,
-        catch_all
-    )
-    app.add_handler(catch_all_handler)
-
-    print('📦 PaperLink Storage Bot — Running')
+    print('📧 PaperLink Mail Bot — Running')
     app.run_polling()
 
 if __name__ == '__main__':
