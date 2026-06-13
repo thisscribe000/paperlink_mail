@@ -1,6 +1,7 @@
 import os
 import time
 import tempfile
+import logging
 from pathlib import Path
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -10,8 +11,11 @@ from api_client import list_files, upload_file, delete_file, fetch_inbox, discon
 
 MAX_FILE_SIZE = 10 * 1024 * 1024
 
+logger = logging.getLogger(__name__)
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    logger.info(f"User {user.id} sent /start")
     await update.message.reply_text(
         f"📦 *PaperLink Storage*\n\n"
         f"Send me any file and I'll upload it, give you a shareable link.\n\n"
@@ -297,6 +301,7 @@ async def show_storage_callback(query, user):
 
 async def connect_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    logger.info(f"User {user.id} sent /connect")
     app_url = os.getenv('APP_URL', 'https://usepaperlink.site')
     oauth_url = f"{app_url}/mail/connect/{user.id}"
     await update.message.reply_text(
@@ -358,3 +363,9 @@ async def disconnect_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await update.message.reply_text("✅ Disconnected from Gmail.", reply_markup=get_main_menu())
     except Exception as e:
         await update.message.reply_text(f"❌ Failed: {str(e)}")
+
+async def catch_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    msg = update.message.text if update.message else "no text"
+    logger.info(f"User {user.id} sent: {msg}")
+    await update.message.reply_text(f"Received: {msg}")
