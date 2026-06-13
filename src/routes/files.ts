@@ -60,6 +60,12 @@ files.post('/upload', async c => {
   const expiresAt = null;
 
   await c.env.DB.prepare(`
+    INSERT INTO users (telegram_id, username, storage_used, created_at)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(telegram_id) DO UPDATE SET username = excluded.username
+  `).bind(user.telegram_id, user.username, data.byteLength, now).run();
+
+  await c.env.DB.prepare(`
     INSERT INTO files (slug, user_id, original_name, mime_type, size_bytes, is_public, expires_at, created_at)
     VALUES (?, ?, ?, ?, ?, 1, ?, ?)
   `).bind(slug, user.telegram_id, file.name, mimeType, data.byteLength, expiresAt, now).run();

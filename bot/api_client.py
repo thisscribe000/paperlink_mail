@@ -76,6 +76,7 @@ async def delete_file(slug: str, user_id: int, username: str, first_name: str):
 
 def build_init_data(user_id: int, username: str | None, first_name: str) -> str:
     import time
+    import urllib.parse
     auth_date = str(int(time.time()))
     user_data = {
         'id': user_id,
@@ -83,7 +84,10 @@ def build_init_data(user_id: int, username: str | None, first_name: str) -> str:
         'first_name': first_name or '',
     }
     user_json = json.dumps(user_data, separators=(',', ':'))
-    params = f"auth_date={auth_date}&user={user_json}"
+    encoded_user = urllib.parse.quote(user_json)
+    params_list = [("auth_date", auth_date), ("user", user_json)]
+    params_list.sort(key=lambda x: x[0])
+    data_check_string = "\n".join(f"{k}={v}" for k, v in params_list)
 
     secret_key = hmac.new(
         b"WebAppData",
@@ -91,5 +95,5 @@ def build_init_data(user_id: int, username: str | None, first_name: str) -> str:
         hashlib.sha256
     ).digest()
 
-    hash_val = hmac.new(secret_key, params.encode(), hashlib.sha256).hexdigest()
-    return f"{params}&hash={hash_val}"
+    hash_val = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+    return f"auth_date={auth_date}&user={encoded_user}&hash={hash_val}"
